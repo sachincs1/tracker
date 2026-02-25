@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}{{ form_title }} – JobTracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-12 col-md-8 col-lg-6">
+
+    <!-- Back link -->
+    <a href="{{ url_for('index') }}" class="back-link d-inline-flex align-items-center gap-2 mb-4">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+
+    <!-- Form Card -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <h4 class="m-0">
+          <i class="bi bi-{% if job %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
+          {{ form_title }}
+        </h4>
+      </div>
+      <div class="form-card-body">
+
+        <form method="POST" action="/{{ action }}" novalidate>
+
+          <!-- Company -->
+          <div class="mb-4">
+            <label class="form-label" for="company">
+              Company <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="company" name="company" class="form-control custom-input"
+                   placeholder="e.g. Google, Amazon, Stripe"
+                   value="{{ job.company if job else '' }}" required/>
+          </div>
+
+          <!-- Role -->
+          <div class="mb-4">
+            <label class="form-label" for="role">
+              Role / Position <span class="text-danger">*</span>
+            </label>
+            <input type="text" id="role" name="role" class="form-control custom-input"
+                   placeholder="e.g. Software Engineer, Product Manager"
+                   value="{{ job.role if job else '' }}" required/>
+          </div>
+
+          <!-- Date Applied -->
+          <div class="mb-4">
+            <label class="form-label" for="date_applied">
+              Date Applied <span class="text-danger">*</span>
+            </label>
+            <input type="date" id="date_applied" name="date_applied"
+                   class="form-control custom-input"
+                   value="{{ job.date_applied.isoformat() if job and job.date_applied else today }}"
+                   required/>
+          </div>
+
+          <!-- Status -->
+          <div class="mb-4">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select custom-input">
+              {% for option in status_options %}
+                <option value="{{ option }}"
+                  {% if job and job.status == option %}selected{% elif not job and option == 'Pending' %}selected{% endif %}>
+                  {{ option }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Notes -->
+          <div class="mb-4">
+            <label class="form-label" for="notes">Notes</label>
+            <textarea id="notes" name="notes" class="form-control custom-input"
+                      rows="4" placeholder="Any extra details – recruiter name, interview round, salary range…">{{ job.notes if job else '' }}</textarea>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex gap-3 pt-2">
+            <button type="submit" class="btn btn-accent flex-grow-1">
+              <i class="bi bi-{% if job %}check-lg{% else %}plus-lg{% endif %} me-1"></i>
+              {% if job %}Save Changes{% else %}Add Application{% endif %}
+            </button>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

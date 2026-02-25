@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard – JobTracker{% endblock %}
+
+{% block content %}
+
+<!-- ── Dashboard Summary Cards ────────────────────────────────────────────── -->
+<div class="row g-4 mt-1 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon total"><i class="bi bi-collection"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ summary.total }}</div>
+        <div class="stat-label">Total Applied</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon pending"><i class="bi bi-hourglass-split"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ summary.pending }}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon selected"><i class="bi bi-trophy"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ summary.selected }}</div>
+        <div class="stat-label">Selected</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon rejected"><i class="bi bi-x-circle"></i></div>
+      <div class="stat-body">
+        <div class="stat-value">{{ summary.rejected }}</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Search Bar & Count ──────────────────────────────────────────────────── -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+
+  <form method="GET" action="{{ url_for('index') }}" class="search-form d-flex gap-2">
+    <input type="hidden" name="status" value="{{ current_filter }}"/>
+    <div class="input-group">
+      <span class="input-group-text bg-dark border-secondary text-muted">
+        <i class="bi bi-search"></i>
+      </span>
+      <input type="text" name="search" class="form-control search-input"
+             placeholder="Search by company…" value="{{ search_query }}"/>
+      {% if search_query %}
+        <a href="{{ url_for('index', status=current_filter) }}" class="btn btn-outline-secondary">
+          <i class="bi bi-x"></i>
+        </a>
+      {% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm px-3">Search</button>
+  </form>
+
+  <span class="text-muted small">
+    Showing <strong>{{ applications|length }}</strong>
+    application{{ 's' if applications|length != 1 }}
+    {% if current_filter %}in <span class="text-light">{{ current_filter }}</span>{% endif %}
+    {% if search_query %}for "<span class="text-light">{{ search_query }}</span>"{% endif %}
+  </span>
+
+</div>
+
+<!-- ── Applications Table ─────────────────────────────────────────────────── -->
+{% if applications %}
+<div class="table-wrapper">
+  <table class="table job-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Company</th>
+        <th>Role</th>
+        <th>Date Applied</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th class="text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in applications %}
+      <tr class="job-row">
+        <td class="text-muted mono">{{ loop.index }}</td>
+
+        <td>
+          <span class="company-name">{{ job.company }}</span>
+        </td>
+
+        <td class="role-text">{{ job.role }}</td>
+
+        <td class="mono text-muted">
+          {{ job.date_applied.strftime('%b %d, %Y') if job.date_applied else '—' }}
+        </td>
+
+        <td>
+          {% set sc = status_colors.get(job.status, {}) %}
+          <span class="status-badge status-{{ job.status.lower().replace(' ', '-') }}">
+            {{ job.status }}
+          </span>
+        </td>
+
+        <td class="notes-cell text-muted">
+          {{ job.notes[:60] ~ '…' if job.notes and job.notes|length > 60 else (job.notes or '—') }}
+        </td>
+
+        <td class="text-center">
+          <div class="d-flex gap-2 justify-content-center">
+            <a href="{{ url_for('edit', job_id=job.id) }}"
+               class="btn btn-sm btn-action btn-edit" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <!-- Delete triggers modal -->
+            <button class="btn btn-sm btn-action btn-del" title="Delete"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteModal"
+                    data-job-id="{{ job.id }}"
+                    data-job-company="{{ job.company }}">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="empty-state text-center py-5">
+  <div class="empty-icon mb-3"><i class="bi bi-inbox"></i></div>
+  <h4 class="text-muted">No applications found</h4>
+  <p class="text-muted small">
+    {% if search_query or current_filter %}
+      Try clearing your filters or search.
+    {% else %}
+      Start tracking by adding your first job application!
+    {% endif %}
+  </p>
+  <a href="{{ url_for('add') }}" class="btn btn-accent mt-2">
+    <i class="bi bi-plus-lg me-1"></i>Add Application
+  </a>
+</div>
+{% endif %}
+
+<!-- ── Delete Confirmation Modal ───────────────────────────────────────────── -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-dark">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+          Confirm Delete
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-muted">
+        Are you sure you want to delete the application to
+        <strong id="modal-company-name" class="text-light"></strong>?
+        <br/><small class="text-danger">This action cannot be undone.</small>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteForm" method="POST" action="">
+          <button type="submit" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash3 me-1"></i>Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
